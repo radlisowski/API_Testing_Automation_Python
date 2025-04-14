@@ -1,4 +1,4 @@
-""" Every class in this file is built on Pydantic's BaseModel, which automatically checks and organizes data.
+""" Most classes in this file are built on Pydantic's BaseModel, which automatically checks and organizes data.
 This setup makes sure that the information fits expected formats and gives clear feedback if something isn't right.
 Declared once can be reused throughout the framework"""
 
