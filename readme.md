@@ -50,3 +50,32 @@ Follow these steps to set up your environment:
      ```
 
 By following these steps, you can ensure your application is set up and tested successfully.
+
+6. **Set up virtual environemnt**
+
+- Make sure python version is 3.12.~ by running
+ ```sh
+     python --version
+ ```
+- navigate to your project directory, for example by running:
+```sh
+     cd pytest-api-test
+```
+
+```sh
+     python -m venv env
+```
+This will create `env` folder in your project directory run: 
+```sh
+source env/bin/activate
+```
+This will activate the virtual environment located in the env folder. Post activation, your terminal prompt should change to reflect an active virtual environment, usually displaying (env) before the directory path. 
+
+- Update pip to the latest version by executing:
+```sh
+ pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org
+```
+- install all required dependencies by running: 
+```sh
+ pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
+```
