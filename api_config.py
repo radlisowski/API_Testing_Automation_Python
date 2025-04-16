@@ -11,11 +11,14 @@ endpoints = {
 # Define configurations for different environments
 environments = {
     'DEV': {
-        'base_url': 'http://localhost:5556'
-
+        'base_url': 'http://localhost:5556',
+        'db_name': 'UserDatabase',
+        'db_collection': 'UserCollection'
     },
     'SIT': {
-        'base_url': 'http://sit.dummy_page.com'
+        'base_url': 'http://sit.dummy_page.com',
+        'db_name': '',
+        'db_collection': ''
     }
 }
 
@@ -26,6 +29,9 @@ current_config = environments[active_environment]
 
 # Directly access the base_url from the current environment
 base_url = current_config['base_url']
+
+db_name = current_config['db_name']
+db_collection = current_config['db_collection']
 
 
 # Function to create full URL for a given endpoint
