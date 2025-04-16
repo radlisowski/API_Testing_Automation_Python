@@ -52,11 +52,12 @@ def test_post_user_endpoint_with_valid_payload(get_user_db_collection):
     # Retrieve the user data from the MongoDB collection matching the username
     database_record = database_collection.find_one({'username': payload.username})
 
-    # Convert the database record into a Python User object for comparison (as above with the response)
+    # Convert the database record into a Pydantic User object for comparison (as above with the response)
     db_user = User(**database_record)
 
     """ Use helper functions to verify that the user attributes, 
-    such as username and email, match between the original user object and the database entry."""
+    such as username and email and role, match between the original user object from the payload 
+    and the database entry."""
     assert_user_attributes(payload, db_user)
 
     """ Ensure that the user's addresses and associated phone numbers 

@@ -13,7 +13,7 @@ environments = {
     'DEV': {
         'base_url': 'http://localhost:5556',
         'db_name': 'UserDatabase',
-        'db_collection': 'UserCollection'
+        'db_collection_name': 'UserCollection'
     },
     'SIT': {
         'base_url': 'http://sit.dummy_page.com',
@@ -22,16 +22,15 @@ environments = {
     }
 }
 
-ca_cert_file_path = 'rds-ca-2019-root.pem'
+ca_cert_file_path = '.pem'
 
 # Select the current environment configuration
 current_config = environments[active_environment]
 
-# Directly access the base_url from the current environment
+# Directly access the base_url, db_name and db_collection_name from the current environment
 base_url = current_config['base_url']
-
 db_name = current_config['db_name']
-db_collection = current_config['db_collection']
+db_collection_name = current_config['db_collection_name']
 
 
 # Function to create full URL for a given endpoint
