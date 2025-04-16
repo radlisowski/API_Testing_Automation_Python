@@ -3,3 +3,4 @@
 /__pycache__
 env
 /test_cases/create_user_test_cases/.pytest_cache/
+*.pyc
