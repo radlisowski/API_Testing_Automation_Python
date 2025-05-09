@@ -63,11 +63,11 @@ By following these steps, you can ensure your application is set up and tested s
 ```
 
 ```sh
-     python -m venv env
+     python3 -m venv venv
 ```
 This will create `env` folder in your project directory run: 
 ```sh
-source env/bin/activate
+source venv/bin/activate
 ```
 This will activate the virtual environment located in the env folder. Post activation, your terminal prompt should change to reflect an active virtual environment, usually displaying (env) before the directory path. 
 
