@@ -1,6 +1,5 @@
 import json
 import random
-
 import pytest
 import requests
 import constants
@@ -62,4 +61,29 @@ def test_post_user_endpoint_with_valid_payload(get_user_db_collection):
 
     """ Ensure that the user's addresses and associated phone numbers 
     are identical between the original user object and the database entry."""
+    assert_user_addresses(payload, db_user)
+
+
+def test_post_user_with_mandatory_only_payload(get_user_db_collection):
+    payload = User(
+        username=f"User {random.randint(1000000, 9999999)}",
+        email=f"test_{random.randint(1000000, 9999999)}@dummy_page.com",
+        role="tester",
+        addresses=[]
+    )
+
+    post_response = requests.post(get_url('user'), json=payload.dict())
+
+    '''RESPONSE VALIDATION'''
+
+    assert post_response.status_code == 201
+    parsed_response = User(**json.loads(post_response.text))
+    assert_user_attributes(payload, parsed_response)
+    assert_user_addresses(payload, parsed_response)
+
+    '''DATABASE VALIDATION'''
+
+    database_record = get_user_db_collection.find_one({'username': payload.username})
+    db_user = User(**database_record)
+    assert_user_attributes(payload, db_user)
     assert_user_addresses(payload, db_user)

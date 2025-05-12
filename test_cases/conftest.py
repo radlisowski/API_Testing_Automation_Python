@@ -1,7 +1,11 @@
+import json
+import random
 import pytest
-from api_config import active_environment, get_database_uri, ca_cert_file_path, db_name, \
-    db_collection_name
+import requests
+import constants
+from api_config import active_environment, get_database_uri, ca_cert_file_path, db_name, db_collection_name, get_url
 from pymongo import MongoClient
+from models.api_models import User, Address, PhoneNumber
 
 
 def get_doc_db_client():
@@ -50,3 +54,34 @@ def pytest_runtest_makereport(item, call):
             database_collection.delete_many({})  # Remove all documents
             print("Database cleanup completed.")
 
+
+@pytest.fixture(scope="session")
+def create_user(get_user_db_collection):
+    """
+    This fixture creates a new user object to prepare data for tests that require a pre-existing user.
+    It generates a user with randomized details like username and phone numbers, ensuring broad test coverage.
+    The user data is sent to the server and validated, providing useful test conditions for user creation and storage.
+    Refer to the README file for more information on how fixtures work in this context.
+    """
+    payload = User(
+        username=f"User {random.randint(1000000, 9999999)}",
+        email=f"coffee_number_{random.randint(1000000, 9999999)}@conftest.com",
+        role="tester",
+        addresses=[
+            Address(
+                street=f"{random.randint(100, 999)} Elm Street",
+                city=constants.CITY,
+                country=constants.COUNTRY,
+                phone_numbers=[
+                    PhoneNumber(type="home", number=str(random.randint(10000000, 99999999)), ),
+                    PhoneNumber(type="work", number=str(random.randint(10000000, 99999999)), ),
+                ]
+            )
+        ]
+    )
+
+    post_response = requests.post(get_url('user'), json=payload.dict())
+    assert post_response.status_code == 201
+    parsed_response = User(**json.loads(post_response.text))
+    # the below returns the created user to the test
+    return parsed_response

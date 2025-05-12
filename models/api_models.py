@@ -34,3 +34,10 @@ class User(BaseModel):
     email: str = Field(..., description="The email of the user")  # Mandatory and Unique email field with description
     addresses: List[Address]  # A list of Address instances associated with the user
     user_id: Optional[int] = None  # An optional user ID that can be either an integer or None
+
+
+class UserErrorResponse(object):
+    detail = ""
+
+    def __init__(self, detail):
+        self.detail = detail

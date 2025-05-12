@@ -4,3 +4,7 @@ Makes the tests less cluttered and removes necessity of defining values multiple
 # USER VALUES
 CITY = "Loughrea"
 COUNTRY = "Ireland"
+
+# ERROR MESSAGES
+CREATE_USER_EMPTY_USERNAME = "Username is required."
+CREATE_USER_EMPTY_EMAIL = "Email is required."
