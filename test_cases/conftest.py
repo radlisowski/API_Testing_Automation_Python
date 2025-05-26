@@ -52,6 +52,7 @@ def pytest_runtest_makereport(item, call):
             db = client[db_name]  # Access the specific database
             database_collection = db[db_collection_name]
             database_collection.delete_many({})  # Remove all documents
+
             print("Database cleanup completed.")
 
 

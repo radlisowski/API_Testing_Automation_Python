@@ -31,7 +31,7 @@ jobs:
       run: docker pull radski/fast_api_for_testing:latest
 
     - name: Run Docker Container
-      run: docker run -d --name api_container -p 8000:8000 radski/fast_api_for_testing:latest
+      run: docker run -d --name api_container -p 5556:5556 radski/fast_api_for_testing:latest
 
     - name: Install dependencies
       run: |
