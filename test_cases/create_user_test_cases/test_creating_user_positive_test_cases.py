@@ -7,8 +7,7 @@ from api_assersions import assert_user_attributes, assert_user_addresses
 from api_config import get_url
 from models.api_models import User, Address, PhoneNumber
 
-
-
+# this all should work now
 @pytest.mark.clean_database
 def test_post_user_endpoint_with_valid_payload(get_user_db_collection):
     payload = User(
