@@ -1,4 +1,4 @@
-name: Run Pytest
+name: Run Pytest with Docker
 
 on:
   push:
@@ -19,7 +19,19 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.12' # Specify the Python version you're using
+        python-version: '3.12'
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Pull Docker Image
+      run: docker pull radski/fast_api_for_testing:latest
+
+    - name: Run Docker Container
+      run: docker run -d --name api_container -p 8000:8000 radski/fast_api_for_testing:latest
 
     - name: Install dependencies
       run: |
@@ -27,5 +39,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Pytest
+      env:
+        PYTHONPATH: .
       run: |
         pytest test_cases/create_user_test_cases
