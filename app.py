@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, Request, status  # FastAPI framework
 from pymongo import MongoClient  # MongoDB client to interact with the database
 from models.api_models import *  # Import Pydantic models for data validation
 
+
 # Initialize a new FastAPI application
 app = FastAPI()
 
