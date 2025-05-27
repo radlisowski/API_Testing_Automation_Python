@@ -8,7 +8,7 @@ from models.api_models import User
 """
 
 
-@pytest.mark.clean_database
+# @pytest.mark.clean_database
 def test_get_user_with_valid_id(create_user):
     """Parameter create_user: This parameter is injected by a pytest fixture, create_user, which
     sets up and creates a user in the database before the test runs.

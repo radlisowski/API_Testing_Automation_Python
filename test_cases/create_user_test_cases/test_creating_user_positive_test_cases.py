@@ -8,7 +8,7 @@ from api_config import get_url
 from models.api_models import User, Address, PhoneNumber
 
 
-@pytest.mark.clean_database
+# @pytest.mark.clean_database
 def test_post_user_endpoint_with_valid_payload(get_user_db_collection):
     payload = User(
         username=f"User {random.randint(1000000, 9999999)}",
