@@ -1,3 +1,5 @@
+import os
+
 import uvicorn  # Uvicorn is an ASGI server for running asynchronous web applications
 from fastapi import FastAPI, HTTPException, Request, status  # FastAPI framework imports to handle requests and exceptions
 from pymongo import MongoClient  # MongoDB client to interact with the database
@@ -7,17 +9,20 @@ from models.api_models import *  # Import Pydantic models for data validation
 app = FastAPI()
 
 # Connect to a MongoDB instance
-client = MongoClient("mongodb://localhost:27017/")  # Connects to MongoDB on the default port
-db = client["UserDatabase"]  # Selects the database to work with
-collection = db["UserCollection"]  # Selects the collection that stores user documents
+mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+mongo_db_name = os.getenv("MONGO_DB_NAME", "UserDatabase")
+client = MongoClient(mongo_uri)  # Connects to MongoDB
+db = client[mongo_db_name]  # Selects the database to work with
+users_collection = db["UserCollection"]  # Stores user documents
+counters_collection = db["Counters"]  # Stores auto-increment counters
 
 
 def get_next_sequence(name: str) -> int:
     """
-    Atomically increment a counter document in the collection to provide unique user IDs.
+    Atomically increment a counter document to provide unique user IDs.
     `find_one_and_update` is used to ensure that each user_id is unique and incremented safely.
     """
-    result = collection.find_one_and_update(
+    result = counters_collection.find_one_and_update(
         {"_id": name}, {"$inc": {"seq": 1}}, return_document=True, upsert=True
     )
     return result["seq"]  # Returns the updated sequence number
@@ -29,7 +34,7 @@ async def get_user(user_id: int):
     Retrieve a user by user_id from the database.
     If the user is not found, raises a 404 HTTPException.
     """
-    user_doc = collection.find_one({"user_id": user_id})  # Fetch the user document using user_id
+    user_doc = users_collection.find_one({"user_id": user_id})  # Fetch the user document using user_id
     if user_doc is None:
         raise HTTPException(status_code=404, detail="User not found")  # User ID does not exist in the database
 
@@ -52,7 +57,7 @@ async def create_user(user: User):
         raise HTTPException(status_code=400, detail=f"{missing_field.capitalize()} is required.")  # Missing field
 
     # Check if the email is unique
-    if collection.find_one({"email": user.email}):
+    if users_collection.find_one({"email": user.email}):
         raise HTTPException(
             status_code=400,
             detail=f"User Email {user.email} already exists."
@@ -61,9 +66,23 @@ async def create_user(user: User):
     user_dict = user.model_dump()  # Convert the Pydantic model to a dictionary
 
     # Insert the new user document into MongoDB
-    collection.insert_one(user_dict)
+    users_collection.insert_one(user_dict)
 
     return user  # Return the created user model as the response
+
+
+@app.delete("/user/{user_id}", status_code=status.HTTP_200_OK)
+async def delete_user(user_id: int):
+    """
+    Delete a user by user_id from the database.
+    If the user is not found, raises a 404 HTTPException.
+    """
+    result = users_collection.delete_one({"user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"message": f"User {user_id} deleted successfully"}
+
 
 # Run the application with Uvicorn if this script is executed directly
 if __name__ == "__main__":
