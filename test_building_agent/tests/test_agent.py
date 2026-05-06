@@ -1,6 +1,10 @@
 import ast
+import io
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from test_building_agent import agent
 
@@ -135,6 +139,139 @@ class AgentStencilTests(unittest.TestCase):
         self.assertIn("invalid_path_parameter_type", missing_case_ids)
 
 
+class AgentFixtureRepoTests(unittest.TestCase):
+    def test_fixture_repo_audit_finds_missing_stencil_cases(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir)
+            _write_fixture_repo(
+                repo_root,
+                app_source="""
+app = object()
+
+
+@app.get("/orders/{order_id}")
+async def get_order(order_id: int):
+    pass
+
+
+@app.post("/orders/")
+async def create_order(order: dict):
+    pass
+""",
+                test_source="""
+import requests
+from api_config import get_url
+
+
+def test_get_order_with_valid_id():
+    order_id = "1"
+    response = requests.get(get_url('orders') + order_id)
+    assert response.status_code == 200
+
+
+def test_post_order_with_valid_payload():
+    response = requests.post(get_url('orders'), json={"name": "Coffee"})
+    assert response.status_code == 201
+""",
+            )
+
+            with _patched_agent_paths(repo_root):
+                results = agent.audit_against_stencil()
+
+        by_endpoint = {(result.endpoint.method, result.endpoint.path): result for result in results}
+        get_missing = {case.id for case in by_endpoint[("GET", "/orders/{order_id}")].missing_cases}
+        post_missing = {case.id for case in by_endpoint[("POST", "/orders/")].missing_cases}
+
+        self.assertEqual(
+            get_missing,
+            {"not_found_unknown_resource", "invalid_path_parameter_type"},
+        )
+        self.assertEqual(
+            post_missing,
+            {
+                "missing_payload",
+                "missing_required_field",
+                "invalid_payload_data_type",
+                "malformed_json",
+            },
+        )
+
+    def test_fixture_repo_audit_passes_when_all_stencil_cases_exist(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = Path(temp_dir)
+            _write_fixture_repo(
+                repo_root,
+                app_source="""
+app = object()
+
+
+@app.get("/orders/{order_id}")
+async def get_order(order_id: int):
+    pass
+
+
+@app.post("/orders/")
+async def create_order(order: dict):
+    pass
+""",
+                test_source="""
+import requests
+from api_config import get_url
+
+
+def test_get_order_with_valid_id():
+    order_id = "1"
+    response = requests.get(get_url('orders') + order_id)
+    assert response.status_code == 200
+
+
+def test_get_order_with_unknown_id_returns_404():
+    missing_order_id = "999999"
+    response = requests.get(get_url('orders') + missing_order_id)
+    assert response.status_code == 404
+
+
+def test_get_order_with_invalid_id_type_returns_validation_error():
+    response = requests.get(get_url('orders') + "abc")
+    assert response.status_code == 422
+
+
+def test_post_order_with_valid_payload():
+    response = requests.post(get_url('orders'), json={"name": "Coffee"})
+    assert response.status_code == 201
+
+
+def test_post_order_with_missing_payload_returns_validation_error():
+    response = requests.post(get_url('orders'))
+    assert response.status_code == 422
+
+
+def test_post_order_with_missing_required_field_returns_validation_error():
+    response = requests.post(get_url('orders'), json={})
+    assert response.status_code == 422
+
+
+def test_post_order_with_invalid_payload_data_type_returns_validation_error():
+    response = requests.post(get_url('orders'), json={"name": 123})
+    assert response.status_code == 422
+
+
+def test_post_order_with_malformed_json_returns_validation_error():
+    response = requests.post(get_url('orders'), data="{bad json")
+    assert response.status_code == 422
+""",
+            )
+
+            with _patched_agent_paths(repo_root):
+                output = io.StringIO()
+                with redirect_stdout(output):
+                    agent.print_stencil_audit_report()
+                results = agent.audit_against_stencil()
+
+        self.assertTrue(all(not result.missing_cases for result in results))
+        self.assertIn("No stencil gaps found.", output.getvalue())
+
+
 def _first_call(source: str) -> ast.Call:
     tree = ast.parse(source)
     for node in ast.walk(tree):
@@ -164,6 +301,31 @@ def _test_request(method: str, path_hint: str, test_name: str, status_codes: tup
         payload_style="no_payload",
         response_validation=(),
         database_validation=False,
+    )
+
+
+def _write_fixture_repo(repo_root: Path, app_source: str, test_source: str) -> None:
+    test_cases_dir = repo_root / "test_cases"
+    test_cases_dir.mkdir()
+    (repo_root / "app.py").write_text(app_source, encoding="utf-8")
+    (repo_root / "api_config.py").write_text(
+        """
+endpoints = {
+    'orders': '/orders/'
+}
+""",
+        encoding="utf-8",
+    )
+    (test_cases_dir / "test_orders.py").write_text(test_source, encoding="utf-8")
+
+
+def _patched_agent_paths(repo_root: Path):
+    return patch.multiple(
+        agent,
+        PROJECT_ROOT=repo_root,
+        APP_FILE=repo_root / "app.py",
+        API_CONFIG_FILE=repo_root / "api_config.py",
+        TEST_CASES_DIR=repo_root / "test_cases",
     )
 
 

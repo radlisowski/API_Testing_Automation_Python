@@ -142,6 +142,8 @@ Run the agent unit tests:
 python3 -m unittest test_building_agent.tests.test_agent -v
 ```
 
+These tests include temporary fixture repos, so the agent is checked against controlled API/test layouts as well as this project.
+
 ## Current Agent Capability
 
 The agent currently:
