@@ -1,69 +1,191 @@
-# Setup Instructions
+# AUTO-TESTING-API
 
-By following these steps, you can ensure your application is set up and tested successfully.
+This repo contains a small FastAPI user service plus an early-stage API test-building agent.
 
-1. **Clone or Fork the Repository**
-   - Begin by cloning or forking the repository to your local machine using Git Desktop (free).
-   - Open the repository in PyCharm (free) 
+The bigger goal is to build an agent that can be dropped into an API repository, discover endpoints, inspect existing tests, compare coverage against an API-agnostic testing stencil, report gaps, and eventually generate missing pytest API tests in the style of the repo.
 
-2. **Install Python and set up virtual environment**
+## What Is Included
 
-- Install Python, version 3.12
-- Make sure python version is 3.12.~ by running
- ```sh
-     python --version
- ```
-- make sure you are in your project directory or navigate to your project directory, for example by running:
-```sh
-     cd pytest-api-test
+- FastAPI app with user `POST`, `GET`, and `DELETE` endpoints
+- MongoDB-backed storage
+- Docker and Docker Compose local environment
+- Existing pytest API tests
+- A local test-building agent under `test_building_agent/`
+- Unit tests for the agent itself
+
+## Project Structure
+
+```text
+.
+├── app.py
+├── docker-compose.yml
+├── Dockerfile
+├── models/
+├── test_cases/
+├── test_building_agent/
+│   ├── README.md
+│   ├── agent.py
+│   ├── templates/
+│   └── tests/
+├── requirements.txt
+└── pytest.ini
 ```
-- create a virtual environment called `env` for your project 
-```sh
-     python3 -m venv env
-```
->This will create env folder in your project directory that will allow for separating anything you do on the 
-project form your machine environment (installing additional modules for the framework will only affect the 
-environment you have created.)
-> 
->**python3:** This specifies the Python interpreter version to use. Here, python3 is selected, ensuring you're using 
-Python 3, which is recommended over Python 2 due to its extended support and features.
-**-m:**
-This flag tells Python to run a module as a script. In this case, it runs the venv module, which is used for 
-creating lightweight virtual environments.
-> 
->**venv:**
-This is the module being run to create a new virtual environment. venv is included in the standard library for 
-Python 3.x and is used to create isolated environments for Python projects.
-> 
->**env:**
-This is the name of the directory where the virtual environment will be created. You can name this directory 
-anything you'd like, but env or venv are common conventions. This directory will contain the Python interpreter, 
-a copy of the pip tool, and other files supporting the isolated environment.
 
-- run the below to activate the enviremnt: 
- ```sh
+## Run Locally With Docker
+
+Build and start the API plus MongoDB:
+
+```bash
+docker compose up -d --build
+```
+
+Open the FastAPI docs:
+
+```text
+http://localhost:5556/docs
+```
+
+Stop the services:
+
+```bash
+docker compose down
+```
+
+## API Examples
+
+Create a user:
+
+```bash
+curl -X POST "http://localhost:5556/user/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "role": "tester",
+    "email": "testuser@example.com",
+    "addresses": [
+      {
+        "street": "Main Street",
+        "city": "Dublin",
+        "country": "Ireland",
+        "phone_numbers": [
+          {
+            "type": "mobile",
+            "number": "123456789"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+Fetch a user:
+
+```bash
+curl "http://localhost:5556/user/1"
+```
+
+Delete a user:
+
+```bash
+curl -X DELETE "http://localhost:5556/user/1"
+```
+
+## Run API Tests
+
+With the Docker services running:
+
+```bash
+docker compose exec -T api pytest test_cases -q
+```
+
+Run only the delete endpoint tests:
+
+```bash
+docker compose exec -T api pytest test_cases/delete_user_test_cases -q
+```
+
+## Test-Building Agent
+
+The agent lives in:
+
+```text
+test_building_agent/
+```
+
+List discovered endpoints:
+
+```bash
+python3 test_building_agent/agent.py --list
+```
+
+Audit endpoint coverage:
+
+```bash
+python3 test_building_agent/agent.py --audit
+```
+
+Compare endpoints and existing tests against the generic API stencil:
+
+```bash
+python3 test_building_agent/agent.py --stencil-audit
+```
+
+Learn current repo testing patterns:
+
+```bash
+python3 test_building_agent/agent.py --learn-templates
+```
+
+Run the agent unit tests:
+
+```bash
+python3 -m unittest test_building_agent.tests.test_agent -v
+```
+
+## Current Agent Capability
+
+The agent currently:
+
+- Discovers FastAPI endpoints from `app.py`
+- Scans pytest files under `test_cases/`
+- Matches `requests.get/post/delete/put/patch` calls to endpoints
+- Compares existing tests against `test_building_agent/templates/api_test_stencil.json`
+- Reports existing and missing test types
+- Stores learned repo-specific patterns in `learned_patterns.json`
+
+It does not generate tests yet. That is the next planned step.
+
+## Current Generic Stencil
+
+The stencil currently checks for:
+
+- `success_happy_path`
+- `not_found_unknown_resource`
+- `invalid_path_parameter_type`
+- `missing_payload`
+- `missing_required_field`
+- `invalid_payload_data_type`
+- `malformed_json`
+
+## Local Python Setup
+
+If you want to run without Docker, create a virtual environment and install dependencies:
+
+```bash
+python3 -m venv env
 source env/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-- Update pip to the latest version by executing:
->"Pip Installs Packages." It is the package management system used in Python to install 
-and manage software packages.
-```sh
- pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org
-```
-- install all required dependencies by running: 
-```sh
- pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
-```
-pip install -r requirements.txt:
+Then run the app:
 
->**-r:** Tells pip to read and install from the specified requirements file.
-requirements.txt: A text file that lists packages and their versions to be installed. 
-Each line in this file typically contains a package name and an optional version specifier, e.g., package==1.0.0.
-> 
->**--trusted-host:** These flags tell pip to trust the specified hosts. This is often used when you need to bypass SSL 
-verification warnings that occur when installing packages from certain repositories.
-> 
->**pypi.org and files.pythonhosted.org:** These entries specify trusted hosts that are part of the 
-default Python Package Index’s hosting.
+```bash
+python3 app.py
+```
 
+MongoDB must be running locally on:
+
+```text
+mongodb://localhost:27017/
+```
