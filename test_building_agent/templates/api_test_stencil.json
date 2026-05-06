@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Endpoint-agnostic API test stencil. The agent compares discovered endpoints against this checklist before generating tests.",
+  "test_cases": [
+    {
+      "id": "success_happy_path",
+      "category": "positive",
+      "applies_to_methods": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      "requires_path_params": false,
+      "requires_request_body": false,
+      "description": "Endpoint accepts a valid request and returns the expected successful status code and response body."
+    },
+    {
+      "id": "not_found_unknown_resource",
+      "category": "negative",
+      "applies_to_methods": ["GET", "PUT", "PATCH", "DELETE"],
+      "requires_path_params": true,
+      "requires_request_body": false,
+      "description": "Endpoint receives a syntactically valid but unknown resource identifier and returns a not-found error."
+    },
+    {
+      "id": "invalid_path_parameter_type",
+      "category": "negative",
+      "applies_to_methods": ["GET", "PUT", "PATCH", "DELETE"],
+      "requires_path_params": true,
+      "requires_request_body": false,
+      "description": "Endpoint receives a path parameter with an invalid data type and returns a validation error."
+    },
+    {
+      "id": "missing_payload",
+      "category": "negative",
+      "applies_to_methods": ["POST", "PUT", "PATCH"],
+      "requires_path_params": false,
+      "requires_request_body": true,
+      "description": "Endpoint receives no JSON payload and returns a validation or bad-request error."
+    },
+    {
+      "id": "missing_required_field",
+      "category": "negative",
+      "applies_to_methods": ["POST", "PUT", "PATCH"],
+      "requires_path_params": false,
+      "requires_request_body": true,
+      "description": "Endpoint receives a payload with one required field missing or blank and returns a validation or bad-request error."
+    },
+    {
+      "id": "invalid_payload_data_type",
+      "category": "negative",
+      "applies_to_methods": ["POST", "PUT", "PATCH"],
+      "requires_path_params": false,
+      "requires_request_body": true,
+      "description": "Endpoint receives a payload field with the wrong data type and returns a validation error."
+    },
+    {
+      "id": "malformed_json",
+      "category": "negative",
+      "applies_to_methods": ["POST", "PUT", "PATCH"],
+      "requires_path_params": false,
+      "requires_request_body": true,
+      "description": "Endpoint receives malformed JSON and returns a validation or bad-request error."
+    }
+  ]
+}

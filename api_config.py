@@ -1,3 +1,5 @@
+import os
+
 """Set the active environment"""
 active_environment = 'DEV'
 # Change this to 'SIT', 'UAT' or other environments as needed
@@ -42,6 +44,6 @@ def get_url(endpoint):
 @staticmethod
 def get_database_uri():
     if active_environment == "DEV":
-        return "mongodb://localhost:27017/",
+        return os.getenv("MONGO_URI", "mongodb://localhost:27017/")
     if active_environment == "SIT":
         return "mongodb://%s:%s@%s:%s/%s"
