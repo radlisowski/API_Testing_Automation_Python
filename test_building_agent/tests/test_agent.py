@@ -64,6 +64,14 @@ def test_example():
 
 
 class AgentStencilTests(unittest.TestCase):
+    def test_load_test_standards_reads_repo_level_stencil_items(self):
+        standards = agent.load_test_standards()
+        standard_ids = {standard.id for standard in standards}
+
+        self.assertIn("api_integration_tests", standard_ids)
+        self.assertIn("service_unit_tests", standard_ids)
+        self.assertIn("coverage_report", standard_ids)
+
     def test_stencil_case_applies_only_to_matching_endpoint_shape(self):
         missing_payload_case = agent.StencilCase(
             id="missing_payload",
@@ -132,6 +140,15 @@ class AgentStencilTests(unittest.TestCase):
         results = agent.audit_against_stencil()
 
         self.assertTrue(all(not result.missing_cases for result in results))
+
+    def test_current_standards_audit_reports_known_testing_standard_gaps(self):
+        results = agent.audit_test_standards()
+        missing_standard_ids = {result.standard.id for result in results if not result.covered}
+
+        self.assertIn("service_unit_tests", missing_standard_ids)
+        self.assertIn("per_test_database_cleanup", missing_standard_ids)
+        self.assertIn("parametrized_negative_tests", missing_standard_ids)
+        self.assertIn("validation_error_tests", missing_standard_ids)
 
 
 class AgentFixtureRepoTests(unittest.TestCase):

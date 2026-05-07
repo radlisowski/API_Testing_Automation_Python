@@ -59,6 +59,14 @@ python3 test_building_agent/agent.py --stencil-audit
 
 This is the most important command right now. It reports which stencil test cases are missing for each endpoint.
 
+Audit repo-level testing standards:
+
+```bash
+python3 test_building_agent/agent.py --standards-audit
+```
+
+This reports broader testing-health gaps, such as missing service unit tests, missing parametrized negatives, missing per-test database cleanup, or missing duplicate-data coverage.
+
 Learn patterns from existing tests:
 
 ```bash
@@ -100,6 +108,16 @@ The generic stencil currently includes:
 - `missing_required_field`
 - `invalid_payload_data_type`
 - `malformed_json`
+
+The repo-level standards currently include:
+
+- `api_integration_tests`
+- `service_unit_tests`
+- `fixture_data_factories`
+- `per_test_database_cleanup`
+- `parametrized_negative_tests`
+- `validation_error_tests`
+- `coverage_report`
 
 The stencil is intentionally endpoint-agnostic. For example, `missing_payload` applies to `POST`, `PUT`, and `PATCH` endpoints that accept request bodies, while `not_found_unknown_resource` applies to path-based `GET`, `PUT`, `PATCH`, and `DELETE` endpoints.
 

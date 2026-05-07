@@ -77,6 +77,13 @@ class StencilCase:
 
 
 @dataclass(frozen=True)
+class TestStandard:
+    id: str
+    category: str
+    description: str
+
+
+@dataclass(frozen=True)
 class StencilAuditResult:
     endpoint: Endpoint
     required_cases: tuple[StencilCase, ...]
@@ -89,6 +96,13 @@ class StencilAuditResult:
     @property
     def has_missing_cases(self) -> bool:
         return bool(self.missing_cases)
+
+
+@dataclass(frozen=True)
+class StandardsAuditResult:
+    standard: TestStandard
+    covered: bool
+    evidence: tuple[str, ...]
 
 
 def load_fastapi_endpoints() -> list[Endpoint]:
@@ -143,8 +157,12 @@ def load_fastapi_endpoints_from_file(file_path: Path) -> list[Endpoint]:
     return endpoints
 
 
+def load_stencil_data() -> dict:
+    return json.loads(API_TEST_STENCIL_FILE.read_text(encoding="utf-8"))
+
+
 def load_api_test_stencil() -> list[StencilCase]:
-    data = json.loads(API_TEST_STENCIL_FILE.read_text(encoding="utf-8"))
+    data = load_stencil_data()
     cases = []
 
     for case_data in data["test_cases"]:
@@ -160,6 +178,22 @@ def load_api_test_stencil() -> list[StencilCase]:
         )
 
     return cases
+
+
+def load_test_standards() -> list[TestStandard]:
+    data = load_stencil_data()
+    standards = []
+
+    for standard_data in data.get("test_standards", []):
+        standards.append(
+            TestStandard(
+                id=standard_data["id"],
+                category=standard_data["category"],
+                description=standard_data["description"],
+            )
+        )
+
+    return standards
 
 
 def load_endpoint_aliases() -> dict[str, str]:
@@ -444,6 +478,127 @@ def audit_against_stencil() -> list[StencilAuditResult]:
     return audit_results
 
 
+def audit_test_standards() -> list[StandardsAuditResult]:
+    endpoint_aliases = load_endpoint_aliases()
+    test_requests = load_test_requests(endpoint_aliases)
+    test_files = list_test_files() + list_test_support_files()
+    source_by_file = {file_path: file_path.read_text(encoding="utf-8") for file_path in test_files}
+    all_test_source = "\n".join(source_by_file.values())
+    results = []
+
+    for standard in load_test_standards():
+        covered, evidence = standard_is_covered(standard, test_requests, source_by_file, all_test_source)
+        results.append(StandardsAuditResult(standard=standard, covered=covered, evidence=tuple(evidence)))
+
+    return results
+
+
+def list_test_files() -> list[Path]:
+    return sorted(TEST_CASES_DIR.rglob("test_*.py"))
+
+
+def list_test_support_files() -> list[Path]:
+    return sorted(TEST_CASES_DIR.rglob("conftest.py"))
+
+
+def standard_is_covered(
+    standard: TestStandard,
+    test_requests: list[TestRequest],
+    source_by_file: dict[Path, str],
+    all_test_source: str,
+) -> tuple[bool, list[str]]:
+    if standard.id == "api_integration_tests":
+        if test_requests:
+            return True, [f"Found {len(test_requests)} HTTP request-based test(s)."]
+        return False, ["No requests.get/post/delete/put/patch calls found in test files."]
+
+    if standard.id == "service_unit_tests":
+        service_tests = [file_path for file_path in source_by_file if "service" in file_path.as_posix().lower()]
+        service_tests.extend(find_files_with_service_test_functions(source_by_file))
+        if service_tests:
+            return True, [f"Found service-oriented test file/source: {path}" for path in service_tests]
+        return False, ["No service/business-logic unit tests detected."]
+
+    if standard.id == "fixture_data_factories":
+        if "@pytest.fixture" in all_test_source or "factory" in all_test_source.lower():
+            return True, ["Found pytest fixtures or factory-style helpers in test source."]
+        return False, ["No pytest fixtures or factory-style test data helpers detected."]
+
+    if standard.id == "per_test_database_cleanup":
+        if has_per_test_database_cleanup(source_by_file):
+            return True, ["Detected function-scoped/autouse database cleanup or per-test delete_many usage."]
+        return False, ["Database cleanup does not appear to run automatically for every test."]
+
+    if standard.id == "parametrized_negative_tests":
+        if "@pytest.mark.parametrize" in all_test_source and "negative" in all_test_source.lower():
+            return True, ["Found pytest parametrization in negative-test source."]
+        return False, ["No parametrized negative tests detected."]
+
+    if standard.id == "validation_error_tests":
+        return validation_error_standard_result(test_requests)
+
+    if standard.id == "coverage_report":
+        project_config = read_project_quality_config()
+        if "pytest-cov" in project_config or "--cov" in project_config:
+            return True, ["Detected pytest-cov dependency or --cov command/config."]
+        return False, ["No pytest-cov dependency or coverage command/config detected."]
+
+    return False, [f"No detector implemented for standard '{standard.id}'."]
+
+
+def find_files_with_service_test_functions(source_by_file: dict[Path, str]) -> list[Path]:
+    matching_files = []
+    for file_path, source in source_by_file.items():
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name.startswith("test_") and "service" in node.name:
+                matching_files.append(file_path)
+                break
+    return matching_files
+
+
+def has_per_test_database_cleanup(source_by_file: dict[Path, str]) -> bool:
+    for source in source_by_file.values():
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            function_source = ast.unparse(node).replace(" ", "").lower()
+            if "delete_many(" not in function_source:
+                continue
+            if "@pytest.fixture" in function_source and (
+                "scope='function'" in function_source
+                or 'scope="function"' in function_source
+                or "autouse=true" in function_source
+            ):
+                return True
+    return False
+
+
+def validation_error_standard_result(test_requests: list[TestRequest]) -> tuple[bool, list[str]]:
+    status_codes = {status_code for test in test_requests for status_code in test.expected_status_codes}
+    scenarios = " ".join(test.scenario for test in test_requests).lower()
+    missing = []
+
+    for status_code in (400, 404, 422):
+        if status_code not in status_codes:
+            missing.append(str(status_code))
+    if "duplicate" not in scenarios and "already_exists" not in scenarios:
+        missing.append("duplicate data")
+    if "malformed_json" not in scenarios and "invalid_json" not in scenarios:
+        missing.append("malformed JSON")
+
+    if not missing:
+        return True, ["Detected 400, 404, 422, duplicate-data, and malformed-JSON test coverage."]
+
+    return False, [f"Missing validation/error coverage for: {', '.join(missing)}."]
+
+
+def read_project_quality_config() -> str:
+    candidate_files = [PROJECT_ROOT / "requirements.txt", PROJECT_ROOT / "pyproject.toml", PROJECT_ROOT / "readme.md"]
+    return "\n".join(file_path.read_text(encoding="utf-8") for file_path in candidate_files if file_path.exists())
+
+
 def stencil_case_applies_to_endpoint(case: StencilCase, endpoint: Endpoint) -> bool:
     if endpoint.method not in case.applies_to_methods:
         return False
@@ -685,6 +840,32 @@ def print_stencil_audit_report() -> None:
     print(f"\nSummary: {missing_case_count} missing stencil test(s) across {missing_result_count} endpoint(s).")
 
 
+def print_standards_audit_report() -> None:
+    results = audit_test_standards()
+
+    print("API Testing Standards Report")
+    print("============================")
+
+    missing_count = 0
+    for result in results:
+        status = "COVERED" if result.covered else "MISSING"
+        standard = result.standard
+        print(f"\n[{status}] {standard.id}")
+        print(f"  category: {standard.category}")
+        print(f"  standard: {standard.description}")
+        for evidence in result.evidence:
+            print(f"  evidence: {evidence}")
+
+        if not result.covered:
+            missing_count += 1
+
+    if missing_count == 0:
+        print("\nAll testing standards are covered.")
+        return
+
+    print(f"\nSummary: {missing_count} missing testing standard(s).")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audit FastAPI endpoints against existing pytest request coverage.")
     parser.add_argument(
@@ -707,6 +888,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Compare endpoints and tests against the generic API test stencil.",
     )
+    parser.add_argument(
+        "--standards-audit",
+        action="store_true",
+        help="Compare the repo against generic API testing standards.",
+    )
     return parser.parse_args()
 
 
@@ -725,7 +911,13 @@ def main() -> None:
     if args.stencil_audit:
         print_stencil_audit_report()
 
-    if not args.list and not args.audit and not args.learn_templates and not args.stencil_audit:
+    if args.standards_audit:
+        print_standards_audit_report()
+
+    no_command_selected = not (
+        args.list or args.audit or args.learn_templates or args.stencil_audit or args.standards_audit
+    )
+    if no_command_selected:
         print_audit_report()
 
 

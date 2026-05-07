@@ -147,6 +147,12 @@ Compare endpoints and existing tests against the generic API stencil:
 python3 test_building_agent/agent.py --stencil-audit
 ```
 
+Audit broader testing standards:
+
+```bash
+python3 test_building_agent/agent.py --standards-audit
+```
+
 Learn current repo testing patterns:
 
 ```bash
@@ -183,6 +189,7 @@ The agent currently:
 - Matches `requests.get/post/delete/put/patch` calls to endpoints
 - Compares existing tests against `test_building_agent/templates/api_test_stencil.json`
 - Reports existing and missing test types
+- Reports repo-level testing standards such as service unit tests, parametrized negatives, cleanup, and coverage
 - Stores learned repo-specific patterns in `learned_patterns.json`
 
 It does not generate tests yet. That is the next planned step.

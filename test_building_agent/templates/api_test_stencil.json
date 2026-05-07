@@ -1,6 +1,43 @@
 {
   "version": 1,
   "description": "Endpoint-agnostic API test stencil. The agent compares discovered endpoints against this checklist before generating tests.",
+  "test_standards": [
+    {
+      "id": "api_integration_tests",
+      "category": "test_layer",
+      "description": "The repo has API integration tests that exercise endpoints over HTTP or a framework test client."
+    },
+    {
+      "id": "service_unit_tests",
+      "category": "test_layer",
+      "description": "The repo has unit tests for service/business logic without requiring a real API server or database."
+    },
+    {
+      "id": "fixture_data_factories",
+      "category": "test_design",
+      "description": "The repo uses reusable fixture or factory helpers to create valid test payloads and test data."
+    },
+    {
+      "id": "per_test_database_cleanup",
+      "category": "test_isolation",
+      "description": "Database cleanup runs for every test or fixture-created records are cleaned per test."
+    },
+    {
+      "id": "parametrized_negative_tests",
+      "category": "test_design",
+      "description": "Negative cases are grouped with pytest parametrization where scenarios share the same structure."
+    },
+    {
+      "id": "validation_error_tests",
+      "category": "api_behavior",
+      "description": "Validation and error behavior is covered, including 422, 400, 404, duplicate data, and malformed JSON."
+    },
+    {
+      "id": "coverage_report",
+      "category": "quality_gate",
+      "description": "The repo can produce a coverage report with pytest-cov."
+    }
+  ],
   "test_cases": [
     {
       "id": "success_happy_path",
