@@ -144,6 +144,19 @@ python3 -m unittest test_building_agent.tests.test_agent -v
 
 These tests include temporary fixture repos, so the agent is checked against controlled API/test layouts as well as this project.
 
+Run linting and formatting checks:
+
+```bash
+ruff check .
+black --check .
+```
+
+Run agent unit tests with coverage:
+
+```bash
+pytest test_building_agent/tests --cov=test_building_agent --cov-report=term-missing
+```
+
 ## Current Agent Capability
 
 The agent currently:

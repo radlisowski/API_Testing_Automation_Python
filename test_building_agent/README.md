@@ -76,6 +76,19 @@ python3 -m unittest test_building_agent.tests.test_agent -v
 These tests use Python's standard library only. They do not need FastAPI, MongoDB, Docker, or pytest.
 They include fixture-repo checks that create temporary mini API projects and verify the stencil audit can both find gaps and recognize complete coverage.
 
+Run linting and formatting checks:
+
+```bash
+ruff check .
+black --check .
+```
+
+Run the agent tests with coverage:
+
+```bash
+pytest test_building_agent/tests --cov=test_building_agent --cov-report=term-missing
+```
+
 ## Current Stencil
 
 The generic stencil currently includes:

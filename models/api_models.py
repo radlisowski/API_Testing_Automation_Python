@@ -1,9 +1,14 @@
-""" Most classes in this file are built on Pydantic's BaseModel, which automatically checks and organizes data.
+"""Most classes in this file are built on Pydantic's BaseModel, which automatically checks and organizes data.
 This setup makes sure that the information fits expected formats and gives clear feedback if something isn't right.
 Declared once can be reused throughout the framework"""
 
 from typing import List, Optional  # Import List for typing collections and Optional for nullable fields
-from pydantic import BaseModel, Field  # Import BaseModel and Field from Pydantic for data validation and model creation
+
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+)  # Import BaseModel and Field from Pydantic for data validation and model creation
 
 
 # Define a model for PhoneNumber using Pydantic
@@ -29,9 +34,12 @@ class User(BaseModel):
     be provided whenever an instance of the User model is created. Optional fields, like 'user_id',
     are marked with 'Optional', allowing flexibility by being either set or unset.
     """
+
     username: str = Field(..., description="The username of the user")  # Mandatory username field with description
     role: str = Field(..., description="The role of the user")  # Mandatory role field with description
-    email: str = Field(..., description="The email of the user")  # Mandatory and Unique email field with description
+    email: EmailStr = Field(
+        ..., description="The email of the user"
+    )  # Mandatory and Unique email field with description
     addresses: List[Address]  # A list of Address instances associated with the user
     user_id: Optional[int] = None  # An optional user ID that can be either an integer or None
 

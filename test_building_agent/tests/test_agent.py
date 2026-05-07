@@ -54,13 +54,11 @@ class AgentRequestParsingTests(unittest.TestCase):
         )
 
     def test_find_expected_status_codes_reads_response_assertions(self):
-        test_node = _first_function(
-            """
+        test_node = _first_function("""
 def test_example():
     response = requests.post('/user/')
     assert response.status_code == 201
-"""
-        )
+""")
 
         self.assertEqual(agent.find_expected_status_codes(test_node), [201])
 
@@ -122,21 +120,18 @@ class AgentStencilTests(unittest.TestCase):
         )
 
         success_test = _test_request("GET", "/user/{user_id}", "test_get_user_with_valid_id", (200,))
-        missing_test = _test_request("GET", "/user/{missing_user_id}", "test_get_user_with_unknown_id_returns_404", (404,))
+        missing_test = _test_request(
+            "GET", "/user/{missing_user_id}", "test_get_user_with_unknown_id_returns_404", (404,)
+        )
 
         self.assertTrue(agent.test_matches_stencil_case(success_test, success_case))
         self.assertTrue(agent.test_matches_stencil_case(missing_test, not_found_case))
         self.assertFalse(agent.test_matches_stencil_case(success_test, not_found_case))
 
-    def test_current_stencil_audit_reports_known_missing_get_cases(self):
+    def test_current_stencil_audit_reports_no_missing_cases_for_current_repo(self):
         results = agent.audit_against_stencil()
-        by_endpoint = {(result.endpoint.method, result.endpoint.path): result for result in results}
 
-        get_result = by_endpoint[("GET", "/user/{user_id}")]
-        missing_case_ids = {case.id for case in get_result.missing_cases}
-
-        self.assertIn("not_found_unknown_resource", missing_case_ids)
-        self.assertIn("invalid_path_parameter_type", missing_case_ids)
+        self.assertTrue(all(not result.missing_cases for result in results))
 
 
 class AgentFixtureRepoTests(unittest.TestCase):

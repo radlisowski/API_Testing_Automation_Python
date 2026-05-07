@@ -1,7 +1,11 @@
 pip
 fastapi
 pydantic
+email-validator
 requests
 pymongo
 uvicorn
 pytest
+pytest-cov
+ruff
+black

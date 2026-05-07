@@ -4,7 +4,6 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 AGENT_ROOT = Path(__file__).parent
 PROJECT_ROOT = AGENT_ROOT.parent
 APP_FILE = PROJECT_ROOT / "app.py"
@@ -50,9 +49,7 @@ class CoverageResult:
     @property
     def positive_tests(self) -> list[TestRequest]:
         return [
-            test
-            for test in self.matching_tests
-            if "positive" in test.file_path.as_posix() or "valid" in test.test_name
+            test for test in self.matching_tests if "positive" in test.file_path.as_posix() or "valid" in test.test_name
         ]
 
     @property
@@ -244,7 +241,7 @@ def describe_scenario(test_name: str) -> str:
     scenario = test_name
     for prefix in ("test_",):
         if scenario.startswith(prefix):
-            scenario = scenario[len(prefix):]
+            scenario = scenario[len(prefix) :]
     return scenario
 
 
@@ -411,9 +408,7 @@ def audit_against_stencil() -> list[StencilAuditResult]:
 
     for result in coverage_results:
         required_cases = tuple(
-            case
-            for case in stencil_cases
-            if stencil_case_applies_to_endpoint(case, result.endpoint)
+            case for case in stencil_cases if stencil_case_applies_to_endpoint(case, result.endpoint)
         )
         covered_case_ids = tuple(
             case.id
@@ -460,13 +455,20 @@ def test_matches_stencil_case(test: TestRequest, case: StencilCase) -> bool:
         return 404 in status_codes or any(word in searchable_text for word in ("not_found", "unknown", "missing_id"))
 
     if case.id == "invalid_path_parameter_type":
-        return any(word in searchable_text for word in ("invalid_id", "invalid_path", "wrong_id", "incorrect_id", "data_type", "type"))
+        return any(
+            word in searchable_text
+            for word in ("invalid_id", "invalid_path", "wrong_id", "incorrect_id", "data_type", "type")
+        )
 
     if case.id == "missing_payload":
-        return any(word in searchable_text for word in ("missing_payload", "empty_payload", "no_payload", "without_payload"))
+        return any(
+            word in searchable_text for word in ("missing_payload", "empty_payload", "no_payload", "without_payload")
+        )
 
     if case.id == "missing_required_field":
-        return any(word in searchable_text for word in ("missing_required", "required", "empty_", "blank_", "missing_field"))
+        return any(
+            word in searchable_text for word in ("missing_required", "required", "empty_", "blank_", "missing_field")
+        )
 
     if case.id == "invalid_payload_data_type":
         return any(word in searchable_text for word in ("invalid_type", "wrong_type", "incorrect_type", "data_type"))
@@ -600,11 +602,13 @@ def print_audit_report() -> None:
             print(f"  - {relative_path}:{test.line_number}::{test.test_name}")
 
     missing_count = sum(1 for result in results if not result.has_coverage)
-    missing_test_type_count = sum(
-        1 for result in results if not result.positive_tests or not result.negative_tests
-    )
+    missing_test_type_count = sum(1 for result in results if not result.positive_tests or not result.negative_tests)
+    template_ready_count = len(results) - missing_test_type_count
     print(f"\nSummary: {len(results) - missing_count}/{len(results)} endpoints have at least one matching test.")
-    print(f"Template readiness: {len(results) - missing_test_type_count}/{len(results)} endpoints have both positive and negative-looking tests.")
+    print(
+        f"Template readiness: {template_ready_count}/{len(results)} endpoints have both positive and "
+        "negative-looking tests."
+    )
 
     if missing_count:
         print("Missing endpoints:")
@@ -637,9 +641,7 @@ def print_stencil_audit_report() -> None:
         endpoint = result.endpoint
         print(f"\n{endpoint.method} {endpoint.path} -> {endpoint.function_name}")
 
-        covered_cases = [
-            case for case in result.required_cases if case.id in result.covered_case_ids
-        ]
+        covered_cases = [case for case in result.required_cases if case.id in result.covered_case_ids]
         if covered_cases:
             print("  Existing tests:")
             for covered_case in covered_cases:
@@ -666,9 +668,7 @@ def print_stencil_audit_report() -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Audit FastAPI endpoints against existing pytest request coverage."
-    )
+    parser = argparse.ArgumentParser(description="Audit FastAPI endpoints against existing pytest request coverage.")
     parser.add_argument(
         "--list",
         action="store_true",

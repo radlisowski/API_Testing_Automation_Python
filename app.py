@@ -1,20 +1,18 @@
-import os
-
 import uvicorn  # Uvicorn is an ASGI server for running asynchronous web applications
-from fastapi import FastAPI, HTTPException, Request, status  # FastAPI framework imports to handle requests and exceptions
+from fastapi import FastAPI, HTTPException, status  # FastAPI framework imports to handle requests and exceptions
 from pymongo import MongoClient  # MongoDB client to interact with the database
-from models.api_models import *  # Import Pydantic models for data validation
+
+from api_config import settings
+from models.api_models import User  # Import Pydantic models for data validation
 
 # Initialize a new FastAPI application
 app = FastAPI()
 
 # Connect to a MongoDB instance
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-mongo_db_name = os.getenv("MONGO_DB_NAME", "UserDatabase")
-client = MongoClient(mongo_uri)  # Connects to MongoDB
-db = client[mongo_db_name]  # Selects the database to work with
-users_collection = db["UserCollection"]  # Stores user documents
-counters_collection = db["Counters"]  # Stores auto-increment counters
+client = MongoClient(settings.mongo_uri)  # Connects to MongoDB
+db = client[settings.db_name]  # Selects the database to work with
+users_collection = db[settings.db_collection_name]  # Stores user documents
+counters_collection = db[settings.counters_collection_name]  # Stores auto-increment counters
 
 
 def get_next_sequence(name: str) -> int:
@@ -53,15 +51,12 @@ async def create_user(user: User):
 
     # Validate that 'username' and 'email' are indeed provided
     if not user.username or not user.email:
-        missing_field = 'username' if not user.username else 'email'
+        missing_field = "username" if not user.username else "email"
         raise HTTPException(status_code=400, detail=f"{missing_field.capitalize()} is required.")  # Missing field
 
     # Check if the email is unique
     if users_collection.find_one({"email": user.email}):
-        raise HTTPException(
-            status_code=400,
-            detail=f"User Email {user.email} already exists."
-        )
+        raise HTTPException(status_code=400, detail=f"User Email {user.email} already exists.")
 
     user_dict = user.model_dump()  # Convert the Pydantic model to a dictionary
 

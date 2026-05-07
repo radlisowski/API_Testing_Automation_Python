@@ -76,14 +76,72 @@
           "scenario": "post_user_with_empty_email_error_handling",
           "path_hint": "/user/",
           "expected_status_codes": [
-            400
+            422
           ],
-          "payload_style": "user_model_payload",
+          "payload_style": "dynamic_payload",
           "response_validation": [
             "parse_json_response",
-            "validate_error_response_model"
+            "validate_error_response_model",
+            "assert_response_field"
           ],
           "database_validation": true
+        },
+        {
+          "endpoint_path": "/user/",
+          "endpoint_function": "create_user",
+          "test_file": "test_cases/create_user_test_cases/test_creating_user_negative_test_cases.py",
+          "test_name": "test_post_user_with_missing_payload_returns_validation_error",
+          "line_number": 60,
+          "scenario": "post_user_with_missing_payload_returns_validation_error",
+          "path_hint": "/user/",
+          "expected_status_codes": [
+            422
+          ],
+          "payload_style": "no_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model",
+            "assert_response_field"
+          ],
+          "database_validation": false
+        },
+        {
+          "endpoint_path": "/user/",
+          "endpoint_function": "create_user",
+          "test_file": "test_cases/create_user_test_cases/test_creating_user_negative_test_cases.py",
+          "test_name": "test_post_user_with_invalid_payload_data_type_returns_validation_error",
+          "line_number": 75,
+          "scenario": "post_user_with_invalid_payload_data_type_returns_validation_error",
+          "path_hint": "/user/",
+          "expected_status_codes": [
+            422
+          ],
+          "payload_style": "dynamic_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model",
+            "assert_response_field"
+          ],
+          "database_validation": false
+        },
+        {
+          "endpoint_path": "/user/",
+          "endpoint_function": "create_user",
+          "test_file": "test_cases/create_user_test_cases/test_creating_user_negative_test_cases.py",
+          "test_name": "test_post_user_with_malformed_json_returns_validation_error",
+          "line_number": 83,
+          "scenario": "post_user_with_malformed_json_returns_validation_error",
+          "path_hint": "/user/",
+          "expected_status_codes": [
+            422
+          ],
+          "payload_style": "no_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model",
+            "assert_response_field"
+          ],
+          "database_validation": false
         }
       ],
       "unknown": []
@@ -127,6 +185,25 @@
             "validate_error_response_model"
           ],
           "database_validation": false
+        },
+        {
+          "endpoint_path": "/user/{user_id}",
+          "endpoint_function": "delete_user",
+          "test_file": "test_cases/delete_user_test_cases/test_deleting_user_negative_test_cases.py",
+          "test_name": "test_delete_user_with_invalid_id_type_returns_validation_error",
+          "line_number": 18,
+          "scenario": "delete_user_with_invalid_id_type_returns_validation_error",
+          "path_hint": "/user/not-an-integer",
+          "expected_status_codes": [
+            422
+          ],
+          "payload_style": "no_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model",
+            "assert_response_field"
+          ],
+          "database_validation": false
         }
       ],
       "unknown": []
@@ -152,15 +229,47 @@
           "database_validation": false
         }
       ],
-      "negative": [],
+      "negative": [
+        {
+          "endpoint_path": "/user/{user_id}",
+          "endpoint_function": "get_user",
+          "test_file": "test_cases/fetch_user_test_cases/test_fetching_user_negative_test_cases.py",
+          "test_name": "test_get_user_with_unknown_id_returns_404",
+          "line_number": 12,
+          "scenario": "get_user_with_unknown_id_returns_404",
+          "path_hint": "/user/{missing_user_id}",
+          "expected_status_codes": [
+            404
+          ],
+          "payload_style": "no_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model"
+          ],
+          "database_validation": false
+        },
+        {
+          "endpoint_path": "/user/{user_id}",
+          "endpoint_function": "get_user",
+          "test_file": "test_cases/fetch_user_test_cases/test_fetching_user_negative_test_cases.py",
+          "test_name": "test_get_user_with_invalid_id_type_returns_validation_error",
+          "line_number": 20,
+          "scenario": "get_user_with_invalid_id_type_returns_validation_error",
+          "path_hint": "/user/not-an-integer",
+          "expected_status_codes": [
+            422
+          ],
+          "payload_style": "no_payload",
+          "response_validation": [
+            "parse_json_response",
+            "validate_error_response_model",
+            "assert_response_field"
+          ],
+          "database_validation": false
+        }
+      ],
       "unknown": []
     }
   },
-  "gaps": [
-    {
-      "method": "GET",
-      "path": "/user/{user_id}",
-      "missing": "negative"
-    }
-  ]
+  "gaps": []
 }
