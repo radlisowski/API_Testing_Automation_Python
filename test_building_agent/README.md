@@ -6,7 +6,7 @@ The goal is to build toward an API-agnostic test generation tool. For now, the a
 
 ## Current Flow
 
-1. Discover FastAPI endpoints from `app.py`.
+1. Discover FastAPI endpoints from app and router modules.
 2. Scan existing pytest files under `test_cases/`.
 3. Detect `requests.get`, `requests.post`, `requests.delete`, `requests.put`, and `requests.patch` calls.
 4. Match those requests back to discovered endpoints.

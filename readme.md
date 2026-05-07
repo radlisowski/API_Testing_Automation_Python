@@ -17,6 +17,11 @@ The bigger goal is to build an agent that can be dropped into an API repository,
 
 ```text
 .
+├── api/
+│   ├── database.py
+│   ├── repositories/
+│   ├── routers/
+│   └── services/
 ├── app.py
 ├── docker-compose.yml
 ├── Dockerfile
@@ -28,8 +33,20 @@ The bigger goal is to build an agent that can be dropped into an API repository,
 │   ├── templates/
 │   └── tests/
 ├── requirements.txt
-└── pytest.ini
+└── pyproject.toml
 ```
+
+## Backend Architecture
+
+The FastAPI app is split into simple layers:
+
+- `app.py` creates the FastAPI app and includes routers.
+- `api/routers/` owns HTTP paths, response models, and status codes.
+- `api/services/` owns business rules and raises API-level errors.
+- `api/repositories/` owns MongoDB queries and persistence.
+- `api/database.py` creates the MongoDB client and collections.
+
+This keeps endpoint wiring, business logic, and database access separate.
 
 ## Run Locally With Docker
 
@@ -161,7 +178,7 @@ pytest test_building_agent/tests --cov=test_building_agent --cov-report=term-mis
 
 The agent currently:
 
-- Discovers FastAPI endpoints from `app.py`
+- Discovers FastAPI endpoints from app and router modules
 - Scans pytest files under `test_cases/`
 - Matches `requests.get/post/delete/put/patch` calls to endpoints
 - Compares existing tests against `test_building_agent/templates/api_test_stencil.json`

@@ -93,7 +93,25 @@ class StencilAuditResult:
 
 def load_fastapi_endpoints() -> list[Endpoint]:
     """Return endpoints defined with decorators such as @app.get('/user/{user_id}')."""
-    tree = ast.parse(APP_FILE.read_text(encoding="utf-8"))
+    endpoints = []
+
+    for file_path in iter_python_files_for_endpoint_scan():
+        endpoints.extend(load_fastapi_endpoints_from_file(file_path))
+
+    return sorted(endpoints, key=lambda endpoint: (endpoint.path, endpoint.method))
+
+
+def iter_python_files_for_endpoint_scan() -> list[Path]:
+    excluded_dirs = {".git", "__pycache__", "test_cases", "test_building_agent"}
+    return [
+        file_path
+        for file_path in sorted(PROJECT_ROOT.rglob("*.py"))
+        if not any(part in excluded_dirs for part in file_path.relative_to(PROJECT_ROOT).parts)
+    ]
+
+
+def load_fastapi_endpoints_from_file(file_path: Path) -> list[Endpoint]:
+    tree = ast.parse(file_path.read_text(encoding="utf-8"))
     endpoints = []
 
     for node in ast.walk(tree):
@@ -107,7 +125,7 @@ def load_fastapi_endpoints() -> list[Endpoint]:
                 continue
             if not isinstance(decorator.func.value, ast.Name):
                 continue
-            if decorator.func.value.id != "app":
+            if decorator.func.value.id not in {"app", "router"}:
                 continue
             if decorator.func.attr not in SUPPORTED_HTTP_METHODS:
                 continue
@@ -122,7 +140,7 @@ def load_fastapi_endpoints() -> list[Endpoint]:
                 )
             )
 
-    return sorted(endpoints, key=lambda endpoint: (endpoint.path, endpoint.method))
+    return endpoints
 
 
 def load_api_test_stencil() -> list[StencilCase]:
